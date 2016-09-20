@@ -1,25 +1,107 @@
 ---
-title: "Reproducible Research: Peer Assessment 1"
-output: 
-  html_document:
-    keep_md: true
+title: 'Reproducible Research: Peer Assessment 1'
+author: "Marinus Koekemoer"
+date: "20 September 2016"
+output: html_document
 ---
 
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
 
 ## Loading and preprocessing the data
 
+1. Load the data
 
+```{r}
+Act_Mon_Data <- read.csv("activity.csv")
+```
+
+2. Process/transform the data
+
+```{r}
+StepsPerDay <- aggregate(steps ~ date, data=Act_Mon_Data, FUN=sum)
+```
 
 ## What is mean total number of steps taken per day?
 
+1. Histogram of the total number of steps taken each day
 
+```{r}
+hist(StepsPerDay$steps)
+```
+
+2. Mean and median number of steps taken each day
+
+```{r}
+mean(StepsPerDay$steps)
+median(StepsPerDay$steps)
+```
 
 ## What is the average daily activity pattern?
 
+1. Time series plot of the average number of steps taken
 
+```{r}
+StepsPerInterval<-aggregate(steps~interval,data=Act_Mon_Data,mean,na.rm=TRUE)
+plot(steps~interval,data=StepsPerInterval,type="l")
+```
+
+2. The 5-minute interval that, on average, contains the maximum number of steps
+
+```{r}
+StepsPerInterval$interval[which.max(StepsPerInterval$steps)]
+```
 
 ## Imputing missing values
 
+1. Calculate and report the total number of missing values in the dataset (i.e. the total number of rows with NAs)
 
+```{r}
+sum(is.na(Act_Mon_Data$steps))
+```
+
+2. Strategy for filling in all of the missing values in the dataset.
+
+Overall Mean stpes will be used
+
+3. Create a new dataset that is equal to the original dataset but with the missing data filled in.
+
+```{r}
+ImputedAct_Mon_Data <-Act_Mon_Data
+ImputedAct_Mon_Data$steps[is.na(ImputedAct_Mon_Data$steps)] <- mean(ImputedAct_Mon_Data$steps, na.rm=TRUE)
+```
+
+4. Histogram of the total number of steps taken each day and Calculate and report the mean and median total number of steps taken per day.
+
+```{r}
+ImputeStepsPerDay <- aggregate(steps ~ date, data=ImputedAct_Mon_Data, FUN=sum)
+hist(ImputeStepsPerDay$steps)
+```
+
+```{r}
+mean(ImputeStepsPerDay$steps)
+median(ImputeStepsPerDay$steps)
+```
+
+Diference in the means are
+```{r}
+mean(ImputeStepsPerDay$steps) - mean(StepsPerDay$steps)
+```
 
 ## Are there differences in activity patterns between weekdays and weekends?
+
+1. Create a new factor variable in the dataset with two levels - "weekday" and "weekend" indicating whether a given date is a weekday or weekend day.
+
+```{r}
+ImputedAct_Mon_Data$day=ifelse(as.POSIXlt(as.Date(ImputedAct_Mon_Data$date))$wday%%6==0,"weekend","weekday")
+ImputedAct_Mon_Data$day=factor(ImputedAct_Mon_Data$day,levels=c("weekday","weekend"))
+```
+
+2. Panel plot comparing the average number of steps taken per 5-minute interval across weekdays and weekends
+
+```{r}
+stepsWeek=aggregate(steps~interval+day,ImputedAct_Mon_Data,mean)
+library(lattice)
+xyplot(steps~interval|factor(day),data=stepsWeek,aspect=1/2,type="l")
+```
